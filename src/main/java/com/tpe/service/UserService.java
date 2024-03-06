@@ -1,0 +1,54 @@
+package com.tpe.service;
+
+import com.tpe.domain.Role;
+import com.tpe.domain.User;
+import com.tpe.domain.enums.RoleType;
+import com.tpe.dto.RegisterRequest;
+import com.tpe.exception.ConflictException;
+import com.tpe.exception.ResourceNotFoundException;
+import com.tpe.repository.RoleRepository;
+import com.tpe.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Service
+public class UserService {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository; // best-practice kesinlikle değil.
+
+    @Autowired
+    private PasswordEncoder passwordEncoder; // password şifrelenecek.
+
+    public void saveUser(RegisterRequest registerRequest) {
+
+        if(userRepository.existsByUserName(registerRequest.getUserName())){
+            throw new ConflictException("Database already has this user!");
+        }
+
+        Role role = roleRepository.findByType(RoleType.ROLE_STUDENT).orElseThrow(() -> new ResourceNotFoundException("notFound user!"));
+        Set<Role> roles = new HashSet<>();
+
+        roles.add(role);
+
+
+        User user = new User(
+                registerRequest.getFirstName(),
+                registerRequest.getLastName(),
+                registerRequest.getUserName(),
+                passwordEncoder.encode(registerRequest.getPassword()),
+                roles
+        );
+
+        userRepository.save(user);
+
+
+    }
+}
